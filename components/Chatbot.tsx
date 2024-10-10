@@ -1,47 +1,32 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
-import { Send, ChevronDown, User, Bot } from "lucide-react";
-
-interface Contract {
-  id: number;
-  name: string;
-  file: string;
-}
-
-const contracts: Contract[] = [
-  { id: 1, name: "Non-Disclosure Agreement", file: "/contracts/1.pdf" },
-  { id: 2, name: "Employment Contract", file: "/contracts/2.pdf" },
-  { id: 3, name: "Service Level Agreement", file: "/contracts/3.pdf" },
-  { id: 4, name: "Lease Agreement", file: "/contracts/4.pdf" },
-  {
-    id: 5,
-    name: "Software License Agreement",
-    file: "/contracts/5.pdf",
-  },
-];
+import React, { useState, useRef, DragEvent } from "react";
+import { Send, User, Bot, Upload } from "lucide-react";
+import PDFViewer from "./PdfPreview";
 
 interface Message {
   text: string;
   sender: "user" | "bot";
 }
 
-export default function Chatbot() {
-  const [selectedContract, setSelectedContract] = useState<Contract>(
-    contracts[0]
-  );
+export default function Chatbot(): JSX.Element {
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [input, setInput] = useState<string>("");
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSend = () => {
+  const handleSend = (): void => {
     if (input.trim()) {
-      setMessages([...messages, { text: input, sender: "user" }]);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { text: input, sender: "user" },
+      ]);
       setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
+        setMessages((prevMessages) => [
+          ...prevMessages,
           {
-            text: "I'm processing your request about the contract.",
+            text: "I'm processing your request about the PDF.",
             sender: "bot",
           },
         ]);
@@ -50,50 +35,79 @@ export default function Chatbot() {
     }
   };
 
-  const handleKeyPress = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      handleSend();
+  const handleFileUpload = (file: File) => {
+    if (file.type === "application/pdf") {
+      setPdfFile(file);
+    } else {
+      alert("Please upload a PDF file.");
     }
   };
 
-  const handleContractSelect = (contract: Contract) => {
-    setSelectedContract(contract);
-    setDropdownOpen(false);
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    handleFileUpload(file);
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col md:flex-row">
-      {/* PDF Viewer */}
+      {/* PDF Upload and Viewer */}
       <div className="w-full md:w-1/2 bg-gray-800 p-4 border-r border-gray-700">
-        <div className="mb-4 relative">
-          <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="w-full bg-gray-700 border border-gray-600 rounded-md px-4 py-2 text-left font-medium text-gray-200 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+        {pdfFile ? (
+          <div className="h-full">
+            <h2 className="text-xl font-semibold text-gray-200 mb-4">
+              {pdfFile.name}
+            </h2>
+            {pdfFile && <PDFViewer file={URL.createObjectURL(pdfFile)} />}
+          </div>
+        ) : (
+          <div
+            className={`h-full flex flex-col items-center justify-center border-2 border-dashed rounded-lg ${
+              isDragging
+                ? "border-purple-500 bg-purple-500 bg-opacity-10"
+                : "border-gray-600"
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           >
-            {selectedContract.name}
-            <ChevronDown className="float-right mt-1" size={20} />
-          </button>
-          {dropdownOpen && (
-            <div className="absolute z-10 mt-1 w-full bg-gray-700 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
-              {contracts.map((contract) => (
-                <div
-                  key={contract.id}
-                  className="cursor-pointer select-none relative py-2 pl-3 pr-9 text-gray-300 hover:bg-purple-600 hover:text-white"
-                  onClick={() => handleContractSelect(contract)}
-                >
-                  {contract.name}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="h-[calc(100vh-6rem)] bg-gray-700 rounded-md flex items-center justify-center">
-          <iframe
-            src={selectedContract.file}
-            className="w-full h-full custom-scrollbar"
-            title="PDF Viewer"
-          />
-        </div>
+            <Upload size={48} className="text-gray-400 mb-4" />
+            <p className="text-gray-300 text-center mb-4">
+              Drag and drop your PDF here, or click to select
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleFileInputChange}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-purple-500 hover:bg-purple-600 text-white rounded-md px-4 py-2 transition-colors duration-200"
+            >
+              Select PDF
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Chat Interface */}
@@ -113,9 +127,13 @@ export default function Chatbot() {
                   }`}
                 >
                   {message.sender === "user" ? (
-                    <User size={20} className="text-white" />
+                    <User size={20} className="text-white" aria-hidden="true" />
                   ) : (
-                    <Bot size={20} className="text-gray-300" />
+                    <Bot
+                      size={20}
+                      className="text-gray-300"
+                      aria-hidden="true"
+                    />
                   )}
                 </div>
                 <div
@@ -137,14 +155,18 @@ export default function Chatbot() {
             <input
               type="text"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyUp={handleKeyPress}
-              placeholder="Ask about the contract..."
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setInput(e.target.value)
+              }
+              onKeyUp={(e) => e.key === "Enter" && handleSend()}
+              placeholder="Ask about the PDF..."
               className="flex-grow px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              aria-label="Chat input"
             />
             <button
               onClick={handleSend}
               className="bg-purple-500 hover:bg-purple-600 text-white rounded-md px-4 py-2 transition-colors duration-200"
+              aria-label="Send message"
             >
               <Send size={20} />
             </button>
