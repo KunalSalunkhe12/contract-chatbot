@@ -13,7 +13,11 @@ import { Button } from "@/components/ui/button";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Set up the worker source
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.js",
+  import.meta.url
+).toString();
 
 interface PDFViewerProps {
   file: string | File;
@@ -62,6 +66,10 @@ export default function PDFViewer({ file }: PDFViewerProps) {
             onLoadError={(error: Error) => setPdfError(error)}
             className="flex justify-center"
             loading={<div className="text-white">Loading PDF...</div>}
+            options={{
+              cMapUrl: "https://unpkg.com/pdfjs-dist@3.4.120/cmaps/",
+              cMapPacked: true,
+            }}
           >
             {pdfError ? (
               <div className="text-red-500 p-4" role="alert">
