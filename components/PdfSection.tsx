@@ -10,11 +10,15 @@ export default function PDFSection() {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  if (typeof window !== "undefined" && !pdfFile) {
+    localStorage.removeItem("threadId");
+  }
+
   const handleFileUpload = async (file: File) => {
     if (file.type === "application/pdf") {
-      setPdfFile(file);
       const formData = new FormData();
       formData.append("file", file);
+      setPdfFile(file);
       try {
         const file = await uploadFile(formData);
         const res = await fetch("/api/create-thread", {
