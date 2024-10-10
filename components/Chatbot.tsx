@@ -91,7 +91,7 @@ export default function Chatbot(): JSX.Element {
           >
             <Upload size={48} className="text-gray-400 mb-4" />
             <p className="text-gray-300 text-center mb-4">
-              Drag and drop your PDF here, or click to select
+              Drag and drop your PDF here
             </p>
             <input
               ref={fileInputRef}
