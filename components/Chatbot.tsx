@@ -1,47 +1,57 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import PDFSection from "./PdfSection";
 import ChatSection from "./ChatSection";
 import { uploadFile } from "@/app/actions/upload-file";
 
 export default function Chatbot(): JSX.Element {
-  const [filePath, setFilePath] = useState<string | null>(null);
-
   const handleFileUpload = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await uploadFile(formData);
-      setFilePath(res.path);
-      if (res.success) {
-        console.log("File uploaded successfully:", res.path);
-      }
+      const file = await uploadFile(formData);
+      const res = await fetch("/api/create-thread", {
+        method: "POST",
+        body: JSON.stringify({
+          filePath: file.path,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      console.log(data);
+      localStorage.setItem("threadId", data.thread.id);
     } catch (error) {
       console.error("File upload failed:", error);
     }
   };
 
   const handleSendMessage = async (message: string) => {
-    console.log("Message sent:", message);
-    const res = await fetch("/api/create-assistant", {
-      method: "POST",
-    });
-    const data = await res.json();
+    const threadId = localStorage.getItem("threadId");
+    if (!threadId) {
+      console.error("Thread ID not found in local storage");
+      return;
+    }
 
-    const chat = await fetch("/api/create-vector-store", {
-      method: "POST",
-      body: JSON.stringify({
-        filePath: filePath,
-        assistantId: data.assistantId,
-        message,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    const chatData = await chat.json();
-    console.log("Chat data:", chatData);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          message,
+          assistantId: process.env.NEXT_PUBLIC_ASSISTANT_ID,
+          threadId,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      console.log(data);
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    }
   };
 
   return (
