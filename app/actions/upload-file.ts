@@ -14,20 +14,26 @@ export async function uploadFile(formData: FormData) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  // Specify the upload directory
-  const uploadDir = join(process.cwd(), "public", "uploads");
+  let filePath = "";
 
-  // Create the upload directory if it doesn't exist
-  try {
-    await mkdir(uploadDir, { recursive: true });
-  } catch (error) {
-    console.error("Failed to create upload directory:", error);
-    throw new Error("Failed to create upload directory");
-  }
-
-  // Generate a unique filename
   const uniqueFilename = `${Date.now()}-${file.name}`;
-  const filePath = join(uploadDir, uniqueFilename);
+  // Specify the upload directory
+  if (process.env.NODE_ENV === "production") {
+    filePath = join("/tmp", uniqueFilename);
+  } else {
+    const uploadDir = join(process.cwd(), "public", "uploads");
+
+    // Create the upload directory if it doesn't exist
+    try {
+      await mkdir(uploadDir, { recursive: true });
+    } catch (error) {
+      console.error("Failed to create upload directory:", error);
+      throw new Error("Failed to create upload directory");
+    }
+
+    // Generate a unique filename
+    filePath = join(uploadDir, uniqueFilename);
+  }
 
   // Write the file
   try {
