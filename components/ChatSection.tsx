@@ -22,6 +22,11 @@ export default function ChatSection({
   const [input, setInput] = useState<string>("");
 
   const handleSend = (): void => {
+    const threadId = localStorage.getItem("threadId");
+    if (!threadId) {
+      alert("Please Upload a PDF file first.");
+      return;
+    }
     if (input.trim()) {
       setMessages((prevMessages) => [
         ...prevMessages,

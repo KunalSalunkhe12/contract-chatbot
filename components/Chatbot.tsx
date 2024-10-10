@@ -37,6 +37,10 @@ export default function Chatbot(): JSX.Element {
       ]);
     } catch (error) {
       console.error("Failed to send message:", error);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { text: "Something went Wrong. Please Try Again", sender: "bot" },
+      ]);
     }
   };
 

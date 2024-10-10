@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       console.log(citations.join("\n"));
       return NextResponse.json({
         success: true,
-        text: text.value,
+        text: text.value.replace("**", ""),
         citations: citations,
       });
     }
