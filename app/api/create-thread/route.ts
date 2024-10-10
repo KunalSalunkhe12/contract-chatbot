@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
       ],
     });
 
+    fs.unlinkSync(fullPath);
+
     return NextResponse.json({ success: true, thread: thread });
   } catch (error) {
     console.error("Error in create-assistant API:", error);

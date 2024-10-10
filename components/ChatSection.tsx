@@ -10,10 +10,15 @@ interface Message {
 
 interface ChatSectionProps {
   onSendMessage: (message: string) => void;
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  messages: Message[];
 }
 
-export default function ChatSection({ onSendMessage }: ChatSectionProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+export default function ChatSection({
+  onSendMessage,
+  messages,
+  setMessages,
+}: ChatSectionProps) {
   const [input, setInput] = useState<string>("");
 
   const handleSend = (): void => {
@@ -24,15 +29,6 @@ export default function ChatSection({ onSendMessage }: ChatSectionProps) {
       ]);
       onSendMessage(input);
       setInput("");
-      setTimeout(() => {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            text: "I'm processing your request about the PDF.",
-            sender: "bot",
-          },
-        ]);
-      }, 1000);
     }
   };
 

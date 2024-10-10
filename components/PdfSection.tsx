@@ -3,20 +3,35 @@
 import React, { useState, useRef, DragEvent } from "react";
 import { Upload } from "lucide-react";
 import PDFViewer from "./PdfPreview";
+import { uploadFile } from "@/app/actions/upload-file";
 
-interface PDFSectionProps {
-  onFileUpload: (file: File) => void;
-}
-
-export default function PDFSection({ onFileUpload }: PDFSectionProps) {
+export default function PDFSection() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
     if (file.type === "application/pdf") {
       setPdfFile(file);
-      onFileUpload(file);
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        const file = await uploadFile(formData);
+        const res = await fetch("/api/create-thread", {
+          method: "POST",
+          body: JSON.stringify({
+            filePath: file.path,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await res.json();
+        console.log(data);
+        localStorage.setItem("threadId", data.thread.id);
+      } catch (error) {
+        console.error("File upload failed:", error);
+      }
     } else {
       alert("Please upload a PDF file.");
     }
