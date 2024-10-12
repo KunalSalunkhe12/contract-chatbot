@@ -8,34 +8,8 @@ interface Message {
   sender: "user" | "bot";
 }
 
-interface ChatSectionProps {
-  onSendMessage: (message: string) => void;
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
-  messages: Message[];
-}
-
-export default function ChatSection({
-  onSendMessage,
-  messages,
-  setMessages,
-}: ChatSectionProps) {
+export default function ChatSection() {
   const [input, setInput] = useState<string>("");
-
-  const handleSend = (): void => {
-    const threadId = localStorage.getItem("threadId");
-    if (!threadId) {
-      alert("Please Upload a PDF file first.");
-      return;
-    }
-    if (input.trim()) {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { text: input, sender: "user" },
-      ]);
-      onSendMessage(input);
-      setInput("");
-    }
-  };
 
   return (
     <div className="w-full md:w-1/2 flex flex-col bg-gray-800 max-h-screen">

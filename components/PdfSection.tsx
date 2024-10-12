@@ -17,14 +17,29 @@ export default function PDFSection() {
       const formData = new FormData();
       formData.append("pdf", file);
       try {
+        // Upload the PDF file to the @vercel/blob
         const res = await uploadPdf(formData);
-        console.log(res);
-        if (res.url) {
-          setPdfUrl(res.url);
-          toast.success("PDF uploaded successfully!");
-        } else {
-          throw new Error("Upload failed");
+
+        if (!res.url) {
+          toast.error("File upload failed. Please try again.");
+          throw new Error("File upload failed");
         }
+
+        // Create a new thread with the uploaded PDF
+        const thread = await fetch("/api/create-thread", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ filePath: res.url }),
+        }).then((res) => res.json());
+
+        //Save the thread ID to local storage
+        localStorage.setItem("threadId", thread.threadId);
+
+        // Set the PDF URL to display in the iframe
+        setPdfUrl(res.url);
+        toast.success("PDF uploaded successfully.");
       } catch (error) {
         console.error("File upload failed:", error);
         toast.error("File upload failed. Please try again.");
