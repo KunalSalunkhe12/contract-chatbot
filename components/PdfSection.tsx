@@ -1,43 +1,38 @@
 "use client";
 
 import React, { useState, useRef, DragEvent } from "react";
-import { Upload } from "lucide-react";
-import PDFViewer from "./PdfPreview";
-import { uploadFile } from "@/app/actions/upload-file";
+import { Upload, Loader2 } from "lucide-react";
+import { uploadPdf } from "@/app/actions/upload-file";
+import { toast } from "sonner";
 
 export default function PDFSection() {
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  if (typeof window !== "undefined" && !pdfFile) {
-    localStorage.removeItem("threadId");
-  }
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const handleFileUpload = async (file: File) => {
     if (file.type === "application/pdf") {
+      setIsUploading(true);
       const formData = new FormData();
-      formData.append("file", file);
-      setPdfFile(file);
+      formData.append("pdf", file);
       try {
-        const file = await uploadFile(formData);
-        const res = await fetch("/api/create-thread", {
-          method: "POST",
-          body: JSON.stringify({
-            filePath: file.path,
-          }),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        const data = await res.json();
-        console.log(data);
-        localStorage.setItem("threadId", data.thread.id);
+        const res = await uploadPdf(formData);
+        console.log(res);
+        if (res.url) {
+          setPdfUrl(res.url);
+          toast.success("PDF uploaded successfully!");
+        } else {
+          throw new Error("Upload failed");
+        }
       } catch (error) {
         console.error("File upload failed:", error);
+        toast.error("File upload failed. Please try again.");
+      } finally {
+        setIsUploading(false);
       }
     } else {
-      alert("Please upload a PDF file.");
+      toast.error("Please upload a PDF file.");
     }
   };
 
@@ -65,14 +60,26 @@ export default function PDFSection() {
     }
   };
 
+  const handleNewUpload = () => {
+    setPdfUrl(null);
+  };
+
   return (
     <div className="w-full md:w-1/2 bg-gray-800 p-4 border-r border-gray-700">
-      {pdfFile ? (
-        <div className="h-full">
-          <h2 className="text-xl font-semibold text-gray-200 mb-4">
-            {pdfFile.name}
-          </h2>
-          {pdfFile && <PDFViewer file={URL.createObjectURL(pdfFile)} />}
+      {pdfUrl ? (
+        <div className="h-full flex flex-col">
+          <iframe
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(
+              pdfUrl
+            )}&embedded=true`}
+            className="w-full h-[600px] border mb-4"
+          ></iframe>
+          <button
+            onClick={handleNewUpload}
+            className="bg-purple-500 hover:bg-purple-600 text-white rounded-md px-4 py-2 transition-colors duration-200 self-center"
+          >
+            Upload New PDF
+          </button>
         </div>
       ) : (
         <div
@@ -85,9 +92,15 @@ export default function PDFSection() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <Upload size={48} className="text-gray-400 mb-4" />
+          {isUploading ? (
+            <Loader2 size={48} className="text-gray-400 mb-4 animate-spin" />
+          ) : (
+            <Upload size={48} className="text-gray-400 mb-4" />
+          )}
           <p className="text-gray-300 text-center mb-4">
-            Drag and drop your PDF here
+            {isUploading
+              ? "Uploading your PDF..."
+              : "Drag and drop your PDF here"}
           </p>
           <input
             ref={fileInputRef}
@@ -99,8 +112,9 @@ export default function PDFSection() {
           <button
             onClick={() => fileInputRef.current?.click()}
             className="bg-purple-500 hover:bg-purple-600 text-white rounded-md px-4 py-2 transition-colors duration-200"
+            disabled={isUploading}
           >
-            Select PDF
+            {isUploading ? "Uploading..." : "Select PDF"}
           </button>
         </div>
       )}
